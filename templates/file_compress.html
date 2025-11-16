@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+{% block title %}File Compressor{% endblock %}
+
+{% block content %}
+<div class="flex justify-center items-start min-h-[80vh] bg-gray-100 pt-16">
+  <div class="bg-white shadow-2xl rounded-3xl p-10 w-full max-w-lg text-center">
+
+    <h2 class="text-4xl font-extrabold text-gray-900 mb-3">📦 File Compression Tool</h2>
+    <p class="text-gray-500 mb-6 text-base">Choose whether to Compress or Decompress.</p>
+
+    <!-- MODE BUTTONS -->
+    <div class="flex bg-gray-200 rounded-full p-1 mb-8 w-full max-w-sm mx-auto shadow-inner">
+      <button id="btn-compress"
+        class="flex-1 py-2 rounded-full font-semibold transition-all duration-300 bg-indigo-600 text-white shadow-md">
+        Compress
+      </button>
+      <button id="btn-decompress"
+        class="flex-1 py-2 rounded-full font-semibold transition-all duration-300 text-gray-700">
+        Decompress
+      </button>
+    </div>
+
+    <!-- FILE INPUT -->
+    <input type="file" id="file-input" hidden>
+    <label id="upload-label"
+      class="border-2 border-dashed border-gray-300 rounded-2xl py-12 flex flex-col items-center justify-center cursor-pointer hover:border-indigo-500 hover:bg-indigo-50 transition">
+      <svg class="w-10 h-10 mb-3 text-indigo-500" fill="none" stroke="currentColor" stroke-width="2"
+        viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 16v4a2 2 0 002 2h12a2 2 0 002-2v-4"/>
+        <polyline points="8 12 12 16 16 12"/>
+        <line x1="12" y1="16" x2="12" y2="4"/>
+      </svg>
+      <p id="upload-text" class="text-gray-600 text-sm">Upload PDF/TXT for Compression</p>
+    </label>
+
+    <div id="file-info" class="mt-4 text-sm text-gray-500 font-medium"></div>
+
+    <button id="action-btn"
+      class="mt-6 w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-xl shadow-md transition">
+      Compress File
+    </button>
+
+    <p id="status" class="text-sm text-gray-500 mt-4"></p>
+  </div>
+</div>
+
+<!-- POPUP -->
+<div id="popup" class="fixed inset-0 hidden bg-black bg-opacity-40 z-50 flex items-center justify-center">
+  <div id="popup-content"
+       class="bg-white rounded-3xl p-8 w-[90%] max-w-md text-center shadow-2xl transform scale-95 opacity-0 transition-all duration-300">
+
+    <div class="flex justify-center mb-4">
+      <div class="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-10 h-10 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+        </svg>
+      </div>
+    </div>
+
+    <h3 id="popup-title" class="text-2xl font-bold text-gray-900 mb-2">Done!</h3>
+
+    <!-- Compression stats -->
+    <div id="popup-details" class="text-gray-700 text-sm mb-6 hidden">
+      <div class="flex justify-between mb-1"><span>Original Size</span><span id="original-size" class="font-semibold"></span></div>
+      <div class="flex justify-between mb-1"><span>Compressed Size</span><span id="compressed-size" class="font-semibold"></span></div>
+      <div class="flex justify-between"><span>Savings</span><span id="savings" class="font-semibold text-green-600"></span></div>
+    </div>
+
+    <div class="flex flex-col gap-3">
+      <a id="download-main" href="#" class="bg-green-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-green-700 transition shadow-md">Download</a>
+      <button id="popup-close" class="mt-3 text-gray-500 hover:text-gray-700 text-sm font-medium">Close</button>
+    </div>
+
+  </div>
+</div>
+
+<style>
+#popup.show { display: flex !important; }
+#popup.show #popup-content { transform: scale(1); opacity: 1; }
+</style>
+
+<script>
+let mode = "compress";
+
+const btnCompress = document.getElementById("btn-compress");
+const btnDecompress = document.getElementById("btn-decompress");
+const fileInput = document.getElementById("file-input");
+const uploadText = document.getElementById("upload-text");
+const fileInfo = document.getElementById("file-info");
+const actionBtn = document.getElementById("action-btn");
+const status = document.getElementById("status");
+const popup = document.getElementById("popup");
+const popupDetails = document.getElementById("popup-details");
+const popupClose = document.getElementById("popup-close");
+const downloadMain = document.getElementById("download-main");
+
+const originalSizeEl = document.getElementById("original-size");
+const compressedSizeEl = document.getElementById("compressed-size");
+const savingsEl = document.getElementById("savings");
+
+let selectedFile = null;
+
+/* MODE BUTTON ANIMATION */
+btnCompress.addEventListener("click", () => {
+  mode = "compress";
+  btnCompress.classList.add("bg-indigo-600", "text-white", "shadow-md");
+  btnDecompress.classList.remove("bg-indigo-600", "text-white", "shadow-md");
+
+  uploadText.textContent = "Upload PDF/TXT for Compression";
+  fileInput.accept = ".pdf,.txt";
+  actionBtn.textContent = "Compress File";
+});
+
+btnDecompress.addEventListener("click", () => {
+  mode = "decompress";
+  btnDecompress.classList.add("bg-indigo-600", "text-white", "shadow-md");
+  btnCompress.classList.remove("bg-indigo-600", "text-white", "shadow-md");
+
+  uploadText.textContent = "Upload .huff for Decompression";
+  fileInput.accept = ".huff";
+  actionBtn.textContent = "Decompress File";
+});
+
+/* FILE HANDLING */
+document.getElementById("upload-label").addEventListener("click", () => fileInput.click());
+
+fileInput.addEventListener("change", e => {
+  selectedFile = e.target.files[0];
+  if (selectedFile)
+    fileInfo.textContent = `${selectedFile.name} (${(selectedFile.size / 1024).toFixed(1)} KB)`;
+});
+
+/* MAIN ACTION */
+actionBtn.addEventListener("click", async () => {
+  if (!selectedFile) return alert("Please select a file first!");
+
+  const formData = new FormData();
+  formData.append("file", selectedFile);
+
+  if (mode === "compress") {
+    status.textContent = "Compressing...";
+    const res = await fetch("/compress_file", { method: "POST", body: formData });
+    const data = await res.json();
+
+    popupDetails.classList.remove("hidden");
+    originalSizeEl.textContent = (data.original_size / 1024).toFixed(1) + " KB";
+    compressedSizeEl.textContent = (data.compressed_size / 1024).toFixed(1) + " KB";
+    savingsEl.textContent = `${(data.saved / 1024).toFixed(1)} KB (${data.saved_percent}%)`;
+
+    downloadMain.href = data.download_compressed_url;
+    downloadMain.download = data.compressed_filename;
+  }
+
+  else {
+    status.textContent = "Decompressing...";
+    const res = await fetch("/decompress_file", { method: "POST", body: formData });
+    const data = await res.json();
+
+    popupDetails.classList.add("hidden");
+
+    downloadMain.href = data.download_url;
+    downloadMain.download = data.decompressed_file;
+  }
+
+  status.textContent = "";
+  popup.classList.add("show");
+});
+
+/* CLOSE POPUP */
+popupClose.addEventListener("click", () => popup.classList.remove("show"));
+</script>
+
+{% endblock %}

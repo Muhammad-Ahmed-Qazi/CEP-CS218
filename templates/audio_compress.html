@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+{% block title %}Audio Compressor{% endblock %}
+
+{% block content %}
+<div class="flex justify-center items-start min-h-[80vh] bg-gray-50 pt-10">
+  <div class="bg-white shadow-2xl rounded-2xl p-8 w-full max-w-lg text-center transition-all duration-300">
+    <h2 class="text-3xl font-extrabold text-gray-900 mb-4">🎵 Audio Compressor</h2>
+    <p class="text-gray-500 mb-6 text-sm">
+      Upload your WAV audio file to reduce its size without losing clarity.
+    </p>
+
+    <!-- Drop Zone -->
+    <label id="drop-zone"
+      class="border-2 border-dashed border-gray-300 rounded-xl py-8 flex flex-col items-center justify-center cursor-pointer hover:border-indigo-400 transition">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-gray-400 mb-3" fill="none" viewBox="0 0 24 24"
+        stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round"
+          d="M12 4v16m8-8H4" />
+      </svg>
+      <p class="text-gray-600">Drag & drop your WAV file here</p>
+      <p class="text-sm text-gray-400 mb-3">or click to select (WAV only)</p>
+      <input id="audio-input" type="file" accept=".wav" hidden />
+    </label>
+
+    <!-- Preview -->
+    <div id="preview" class="hidden mt-5">
+      <audio id="audio-player" controls class="mx-auto w-full rounded-lg shadow-sm"></audio>
+      <p id="file-info" class="text-sm text-gray-500 mt-2"></p>
+    </div>
+
+    <!-- Compress Button -->
+    <button id="compress-btn"
+      class="mt-6 w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-lg transition-all duration-200">
+      Compress Audio
+    </button>
+
+    <!-- Status Message -->
+    <p id="status" class="text-sm text-gray-500 mt-4"></p>
+  </div>
+</div>
+
+<!-- Centered Success Popup -->
+<div id="popup"
+  class="fixed inset-0 hidden bg-black bg-opacity-40 z-50 flex items-center justify-center transition-opacity duration-300">
+  <div
+    class="bg-white rounded-2xl p-8 w-[90%] max-w-md text-center shadow-2xl transform scale-95 opacity-0 transition-all duration-300"
+    id="popup-content">
+    <div class="flex justify-center mb-4">
+      <div class="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-10 h-10 text-green-600" fill="none" viewBox="0 0 24 24"
+          stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+        </svg>
+      </div>
+    </div>
+    <h3 class="text-2xl font-bold text-gray-900 mb-2">Compression Successful!</h3>
+    <div id="popup-details" class="text-gray-700 text-sm mb-6">
+      <div class="flex justify-between mb-1"><span>Original Size</span><span id="original-size"
+          class="font-semibold"></span></div>
+      <div class="flex justify-between mb-1"><span>New Size</span><span id="compressed-size"
+          class="font-semibold"></span></div>
+      <div class="flex justify-between"><span>Savings</span><span id="savings"
+          class="font-semibold text-green-600"></span></div>
+    </div>
+    <div class="flex justify-center gap-4">
+      <a id="download-link" href="#"
+        class="bg-green-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-green-700 transition">Download</a>
+      <button onclick="resetCompressor()"
+        class="bg-gray-200 text-gray-700 px-6 py-2 rounded-lg font-semibold hover:bg-gray-300 transition">Compress
+        Another</button>
+    </div>
+  </div>
+</div>
+
+<style>
+#popup.show {
+  display: flex !important;
+}
+#popup.show #popup-content {
+  transform: scale(1);
+  opacity: 1;
+}
+#popup #popup-content {
+  transform: scale(0.95);
+  opacity: 0;
+}
+</style>
+
+<script>
+const input = document.getElementById("audio-input");
+const dropZone = document.getElementById("drop-zone");
+const preview = document.getElementById("preview");
+const audioPlayer = document.getElementById("audio-player");
+const fileInfo = document.getElementById("file-info");
+const status = document.getElementById("status");
+const compressBtn = document.getElementById("compress-btn");
+const popup = document.getElementById("popup");
+const originalSizeEl = document.getElementById("original-size");
+const compressedSizeEl = document.getElementById("compressed-size");
+const savingsEl = document.getElementById("savings");
+const downloadLink = document.getElementById("download-link");
+
+let selectedFile = null;
+
+// --- File Handling ---
+dropZone.addEventListener("click", () => input.click());
+dropZone.addEventListener("dragover", e => {
+  e.preventDefault();
+  dropZone.classList.add("border-indigo-400", "bg-indigo-50");
+});
+dropZone.addEventListener("dragleave", () => {
+  dropZone.classList.remove("border-indigo-400", "bg-indigo-50");
+});
+dropZone.addEventListener("drop", e => {
+  e.preventDefault();
+  dropZone.classList.remove("border-indigo-400", "bg-indigo-50");
+  const file = e.dataTransfer.files[0];
+  if (file) handleFile(file);
+});
+input.addEventListener("change", e => {
+  const file = e.target.files[0];
+  if (file) handleFile(file);
+  e.target.value = "";
+});
+
+function handleFile(file) {
+  if (file.type !== "audio/wav" && file.type !== "audio/x-wav") {
+    alert("❌ Unsupported file type! Please upload a WAV file only.");
+    return;
+  }
+  selectedFile = file;
+  const url = URL.createObjectURL(file);
+  audioPlayer.src = url;
+  preview.classList.remove("hidden");
+  fileInfo.textContent = `${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+}
+
+// --- Compression Logic ---
+compressBtn.addEventListener("click", async () => {
+  if (!selectedFile) return alert("⚠️ Please select a WAV file first!");
+
+  compressBtn.disabled = true;
+  compressBtn.classList.add("opacity-60", "cursor-not-allowed");
+  status.textContent = "🔄 Compressing audio... Please wait.";
+
+  const formData = new FormData();
+  formData.append("audio", selectedFile);
+
+  try {
+    const res = await fetch("/compress_audio", { method: "POST", body: formData });
+    const data = await res.json();
+    if (!res.ok || !data.success) throw new Error(data.error || "Compression failed");
+
+    const originalKB = (data.original_size / 1024).toFixed(1);
+    const compressedKB = (data.compressed_size / 1024).toFixed(1);
+    const savedKB = (data.saved / 1024).toFixed(1);
+    const savedPercent = data.saved_percent;
+
+    originalSizeEl.textContent = `${originalKB} KB`;
+    compressedSizeEl.textContent = `${compressedKB} KB`;
+    savingsEl.textContent = `${savedKB} KB (${savedPercent}%)`;
+
+    downloadLink.href = data.download_url;
+    downloadLink.download = "compressed_" + selectedFile.name;
+
+    popup.classList.add("show");
+    status.textContent = "✅ Compression complete!";
+  } catch (err) {
+    console.error(err);
+    status.textContent = "❌ " + err.message;
+  } finally {
+    compressBtn.disabled = false;
+    compressBtn.classList.remove("opacity-60", "cursor-not-allowed");
+  }
+});
+
+// --- Reset Compressor ---
+function resetCompressor() {
+  popup.classList.remove("show");
+  selectedFile = null;
+  preview.classList.add("hidden");
+  audioPlayer.src = "";
+  fileInfo.textContent = "";
+  status.textContent = "";
+}
+</script>
+{% endblock %}
