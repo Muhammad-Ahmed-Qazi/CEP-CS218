@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}Home | OEL Compression{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="text-center mt-16">
+    <h1 class="text-5xl md:text-6xl font-extrabold text-gray-900 mb-6 leading-tight">
+        Fast, Simple & Smart File Compression
+    </h1>
+    <p class="text-lg md:text-xl text-gray-600 mb-10 max-w-3xl mx-auto">
+        Compress your <span class="font-semibold text-indigo-600">images</span>,
+        <span class="font-semibold text-indigo-600">audio</span>, and
+        <span class="font-semibold text-indigo-600">PDFs</span> — all in one place.
+        Sign up for free and start optimizing your files today!
+    </p>
+
+    <a href="{{ url_for('signup_page') }}"
+       class="bg-indigo-600 text-white text-lg font-semibold px-8 py-4 rounded-md hover:bg-indigo-700 shadow-md transition-all duration-200">
+       Get Started for Free
+    </a>
+</section>
+
+<!-- Compression Types Section -->
+<section class="mt-24">
+    <h2 class="text-3xl font-bold text-center text-gray-800 mb-10">Choose Your Compression Type</h2>
+
+    <div class="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto px-4">
+        <!-- Image Compression -->
+        <a href="{{ url_for('dashboard') }}#image"
+           class="group bg-white p-8 rounded-2xl shadow-lg border border-gray-100 hover:border-indigo-500 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2">
+            <div class="flex flex-col items-center text-center space-y-4">
+                <div class="bg-indigo-100 text-indigo-600 p-4 rounded-full">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1M4 8v8m16-8v8m-9-4l2-2 4 4" />
+                    </svg>
+                </div>
+                <h3 class="text-2xl font-semibold text-gray-900 group-hover:text-indigo-600">Image Compression</h3>
+                <p class="text-gray-600 text-sm">
+                    Optimize PNG, JPG, and WebP images while keeping great quality.
+                </p>
+            </div>
+        </a>
+
+        <!-- Audio Compression -->
+        <a href="{{ url_for('dashboard') }}#audio"
+           class="group bg-white p-8 rounded-2xl shadow-lg border border-gray-100 hover:border-indigo-500 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2">
+            <div class="flex flex-col items-center text-center space-y-4">
+                <div class="bg-indigo-100 text-indigo-600 p-4 rounded-full">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M9 19V6l12-2v13M9 19a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                </div>
+                <h3 class="text-2xl font-semibold text-gray-900 group-hover:text-indigo-600">Audio Compression</h3>
+                <p class="text-gray-600 text-sm">
+                    Reduce the size of WAV files — perfect for uploading and sharing.
+                </p>
+            </div>
+        </a>
+
+        <!-- PDF Compression -->
+        <a href="{{ url_for('dashboard') }}#pdf"
+           class="group bg-white p-8 rounded-2xl shadow-lg border border-gray-100 hover:border-indigo-500 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2">
+            <div class="flex flex-col items-center text-center space-y-4">
+                <div class="bg-indigo-100 text-indigo-600 p-4 rounded-full">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M12 11c0-2.21 1.79-4 4-4h4v12H8V7h4m0-3v4h8V4H12z" />
+                    </svg>
+                </div>
+                <h3 class="text-2xl font-semibold text-gray-900 group-hover:text-indigo-600">PDF Compression</h3>
+                <p class="text-gray-600 text-sm">
+                    Shrink PDFs without losing clarity — ideal for documents and reports.
+                </p>
+            </div>
+        </a>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,232 @@
+{% extends "base.html" %}
+{% block title %}Image Compressor{% endblock %}
+
+{% block content %}
+<div class="flex justify-center items-start min-h-[80vh] bg-gray-100 pt-16">
+  <div class="bg-white shadow-2xl rounded-3xl p-10 w-full max-w-lg text-center transition-all duration-300">
+    <h2 class="text-4xl font-extrabold text-gray-900 mb-3">🖼️ Image Compressor</h2>
+    <p class="text-gray-500 mb-8 text-base">
+      Upload your image (PNG, JPG, or WebP) and adjust the quality below.
+    </p>
+
+    <!-- Drop Zone -->
+    <label id="drop-zone"
+      class="border-2 border-dashed border-gray-300 rounded-2xl py-12 flex flex-col items-center justify-center cursor-pointer hover:border-indigo-500 hover:bg-indigo-50 transition">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-indigo-400 mb-3" fill="none" viewBox="0 0 24 24"
+        stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round"
+          d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+      </svg>
+      <p class="text-gray-600">Drag & drop image files</p>
+      <p class="text-sm text-gray-400 mb-3">or click to select (PNG, JPG, WebP)</p>
+      <input id="image-input" type="file" accept=".png,.jpg,.jpeg,.webp" hidden />
+    </label>
+
+    <!-- Preview -->
+    <div id="preview" class="hidden mt-5">
+      <img id="preview-img" src="#" alt="Preview"
+        class="mx-auto max-h-52 rounded-lg shadow-md border border-gray-200" />
+      <p id="file-info" class="text-sm text-gray-500 mt-2 font-medium"></p>
+    </div>
+
+    <!-- Compression Quality -->
+    <div class="mt-6 text-left">
+      <label for="quality" class="block text-gray-800 font-semibold mb-2 text-center">Compression Quality</label>
+      <input type="range" id="quality" min="0" max="100" value="70"
+        class="w-full accent-indigo-600 cursor-pointer">
+      <div class="flex justify-between text-sm text-gray-500 mt-1">
+        <span>Low (Smallest)</span>
+        <span>High (Best)</span>
+      </div>
+    </div>
+
+    <!-- Compress Button -->
+    <button id="compress-btn"
+      class="mt-6 w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-xl shadow-md transition-all duration-200">
+      Compress Image
+    </button>
+
+    <!-- Status Message -->
+    <p id="status" class="text-sm text-gray-500 mt-4"></p>
+  </div>
+</div>
+
+
+<!-- Popup -->
+<div id="popup" class="fixed inset-0 hidden bg-black bg-opacity-40 z-50 flex items-center justify-center">
+  <div
+    class="bg-white rounded-3xl p-8 w-[90%] max-w-md text-center shadow-2xl transform scale-95 opacity-0 transition-all duration-300"
+    id="popup-content">
+
+    <div class="flex justify-center mb-4">
+      <div class="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-10 h-10 text-green-600" fill="none" viewBox="0 0 24 24"
+          stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+        </svg>
+      </div>
+    </div>
+
+    <h3 class="text-2xl font-bold text-gray-900 mb-2">Compression Successful!</h3>
+
+    <div id="popup-details" class="text-gray-700 text-sm mb-6">
+      <div class="flex justify-between mb-1">
+        <span>Original Size</span>
+        <span id="original-size" class="font-semibold"></span>
+      </div>
+
+      <div class="flex justify-between mb-1">
+        <span>Compressed Size</span>
+        <span id="compressed-size" class="font-semibold"></span>
+      </div>
+
+      <div class="flex justify-between">
+        <span>Savings</span>
+        <span id="savings" class="font-semibold text-green-600"></span>
+      </div>
+    </div>
+
+    <div class="flex justify-center gap-4">
+      <a id="download-compressed"
+        class="bg-green-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-green-700 transition">Download</a>
+
+      <button id="popup-close"
+        class="bg-gray-200 text-gray-700 px-6 py-3 rounded-xl font-semibold hover:bg-gray-300 transition">
+        Close
+      </button>
+    </div>
+  </div>
+</div>
+
+
+
+
+<style>
+#popup.show {
+  display: flex !important;
+}
+#popup.show #popup-content {
+  transform: scale(1);
+  opacity: 1;
+}
+#popup #popup-content {
+  transform: scale(0.95);
+  opacity: 0;
+}
+</style>
+
+<script>
+const input = document.getElementById("image-input");
+const dropZone = document.getElementById("drop-zone");
+const preview = document.getElementById("preview");
+const previewImg = document.getElementById("preview-img");
+const fileInfo = document.getElementById("file-info");
+const status = document.getElementById("status");
+const compressBtn = document.getElementById("compress-btn");
+const qualitySlider = document.getElementById("quality");
+
+const popup = document.getElementById("popup");
+const originalSizeEl = document.getElementById("original-size");
+const compressedSizeEl = document.getElementById("compressed-size");
+const savingsEl = document.getElementById("savings");
+const downloadLink = document.getElementById("download-compressed");
+
+let selectedFile = null;
+
+/* ---------------------- FILE HANDLING ---------------------- */
+dropZone.addEventListener("click", () => input.click());
+
+dropZone.addEventListener("dragover", e => {
+  e.preventDefault();
+  dropZone.classList.add("border-indigo-500", "bg-indigo-50");
+});
+
+dropZone.addEventListener("dragleave", () => {
+  dropZone.classList.remove("border-indigo-500", "bg-indigo-50");
+});
+
+dropZone.addEventListener("drop", e => {
+  e.preventDefault();
+  dropZone.classList.remove("border-indigo-500", "bg-indigo-50");
+  const file = e.dataTransfer.files[0];
+  if (file) handleFile(file);
+});
+
+input.addEventListener("change", e => {
+  const file = e.target.files[0];
+  if (file) handleFile(file);
+  e.target.value = "";
+});
+
+function handleFile(file) {
+  if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+    alert("❌ Unsupported file type! PNG, JPG, or WebP only.");
+    return;
+  }
+
+  selectedFile = file;
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    previewImg.src = e.target.result;
+    preview.classList.remove("hidden");
+    fileInfo.textContent = `${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+  };
+  reader.readAsDataURL(file);
+}
+
+/* ---------------------- COMPRESS LOGIC ---------------------- */
+compressBtn.addEventListener("click", async () => {
+  if (!selectedFile) return alert("⚠️ Please select an image first!");
+
+  compressBtn.disabled = true;
+  compressBtn.classList.add("opacity-60", "cursor-not-allowed");
+  status.textContent = "🔄 Compressing image... Please wait.";
+
+  const formData = new FormData();
+  formData.append("image", selectedFile);
+  formData.append("quality", qualitySlider.value);
+
+  try {
+    const res = await fetch("/compress_image", { method: "POST", body: formData });
+    const data = await res.json();
+
+    if (!res.ok || !data.success) throw new Error(data.error || "Compression failed");
+
+    originalSizeEl.textContent = `${(data.original_size / 1024).toFixed(1)} KB`;
+    compressedSizeEl.textContent = `${(data.compressed_size / 1024).toFixed(1)} KB`;
+    savingsEl.textContent =
+      `${(data.saved / 1024).toFixed(1)} KB (${data.saved_percent}%)`;
+
+    downloadLink.href = data.download_url;
+    downloadLink.download = "compressed_" + selectedFile.name;
+
+    popup.classList.add("show");
+    status.textContent = "✅ Compression complete!";
+  } catch (err) {
+    console.error(err);
+    status.textContent = "❌ " + err.message;
+  } finally {
+    compressBtn.disabled = false;
+    compressBtn.classList.remove("opacity-60", "cursor-not-allowed");
+  }
+});
+
+/* ---------------------- CLOSE POPUP + RESET ---------------------- */
+document.getElementById("popup-close").addEventListener("click", () => {
+  popup.classList.remove("show");
+
+  selectedFile = null;
+
+  preview.classList.add("hidden");
+  previewImg.src = "";
+  fileInfo.textContent = "";
+
+  status.textContent = "";
+  qualitySlider.value = 70;
+
+  input.value = "";
+});
+</script>
+
+{% endblock %}
